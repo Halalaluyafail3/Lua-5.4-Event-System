@@ -34,28 +34,32 @@ typedef struct WThread{
 #define printLiteral(s) fwrite(s,sizeof(char),sizeof(s)-1,stdout)
 void errMessage(lua_State*L){
 	switch(lua_type(L,-1)){
-		case LUA_TSTRING:;
+		case LUA_TSTRING:{
 			size_t size;
 			const char*str = lua_tolstring(L,-1,&size);
 			fwrite(str,sizeof(char),size,stdout);
 			break;
-		case LUA_TNUMBER:;
+		}
+		case LUA_TNUMBER:{
 			if(lua_isinteger(L,-1))
 				printf(LUA_INTEGER_FMT,lua_tointeger(L,-1));
 			else
 				printf(LUA_NUMBER_FMT,lua_tonumber(L,-1));
 			break;
-		case LUA_TNIL:;
+		}
+		case LUA_TNIL:{
 			printLiteral("nil");
 			break;
-		case LUA_TBOOLEAN:;
+		}
+		case LUA_TBOOLEAN:{
 			int b = lua_toboolean(L,-1);
 			if(b)
 				printLiteral("true");
 			else
 				printLiteral("false");
 			break;
-		default:;
+		}
+		default:{
 			int tt = luaL_getmetafield(L,-1,"__name");
 			if(tt==LUA_TSTRING){
 				size_t size;
@@ -68,6 +72,7 @@ void errMessage(lua_State*L){
 					lua_pop(L,1);
 				printf("%s: %p",luaL_typename(L,-1),lua_topointer(L,-1));
 			}
+		}
 	}
 }
 int eIsConnected(lua_State*L){
