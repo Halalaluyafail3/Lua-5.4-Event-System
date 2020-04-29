@@ -2,7 +2,7 @@
 /* Connection system for Lua 5.4 */
 #define E_CONNECTION_NAME "Connection"
 /*
-Connection uses 3 bytes to store its state, a pointer for a string, and a size_t for the string lenth
+Connection uses 3 bytes to store its state, a pointer for a string, and a size_t for the string length
 Connected - whether the Connection is connected
 ToDiscconnect - whether the Connection is going to be disconnect (it disconnected during it being fired)
 Running - whether the Connection is running
