@@ -325,7 +325,8 @@ int eFire(lua_State*L){
 				lua_setiuservalue(L,-2,1); /* remove previous's next */
 				lua_pushnil(L);
 				lua_setiuservalue(L,-3,2); /* remove previous */
-				lua_remove(L,-2);
+				lua_pop(L,2);
+				lua_pushnil(L);
 			}
 		else /* no previous */
 			if(lua_getiuservalue(L,-2,1)!=LUA_TNIL){ /* has next but no previous */
