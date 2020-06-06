@@ -13,7 +13,8 @@ uservalue 4 - Event
 */
 typedef struct Connection{
 	size_t DebugStringLength;
-	unsigned char*DebugString,Connected,ToDisconnect,Running;
+	unsigned char Connected,ToDisconnect,Running;
+	char DebugString[];
 }Connection;
 #define E_EVENT_NAME "Event"
 /*
@@ -80,11 +81,6 @@ int eIsConnected(lua_State*L){
 	lua_pushboolean(L,con->Connected&&!con->ToDisconnect);
 	return 1;
 }
-int eConnectionGC(lua_State*L){
-	Connection*con = (Connection*)luaL_checkudata(L,1,E_CONNECTION_NAME);
-	free(con->DebugString); /* NULL is ok for free */
-	return 0;
-}
 int eErrorHandler(lua_State*L){
 	lua_settop(L,1);
 	printLiteral("| Error message (Connection):\n");
@@ -99,19 +95,18 @@ int eErrorHandler(lua_State*L){
 int eConnect(lua_State*L){
 	luaL_checkudata(L,1,E_EVENT_NAME);
 	luaL_checktype(L,2,LUA_TFUNCTION);
-	Connection*con = (Connection*)lua_newuserdatauv(L,sizeof(Connection),4);
-	con->Connected = '\xFF',con->ToDisconnect = '\0',con->Running = '\0';
 	luaL_traceback(L,L,NULL,0);
 	size_t size;
 	const char*str = lua_tolstring(L,-1,&size);
-	unsigned char*copy = (unsigned char*)malloc(sizeof(char)*size);
-	if(copy){
-		for(size_t i=0;i<size;i++)
-			copy[i] = (unsigned char)str[i];
-		con->DebugString = copy,con->DebugStringLength = size;
-	}else
-		con->DebugString = copy,con->DebugStringLength = 0;
-	lua_pop(L,1);
+	Connection*con = (Connection*)lua_newuserdatauv(L,offsetof(Connection,DebugString)+(size+1)*sizeof(char),4);
+	con->Connected = '\xFF';
+	con->ToDisconnect = '\0';
+	con->Running = '\0';
+	con->DebugStringLength = size;
+	char*Debug = con->DebugString;
+	for(size_t i=0;i<=size;i++)
+		Debug[i] = str[i];
+	lua_remove(L,-2);
 	lua_pushvalue(L,lua_upvalueindex(1));
 	lua_setmetatable(L,-2);
 	lua_pushvalue(L,2);
@@ -187,7 +182,7 @@ int eReconnect(lua_State*L){
 	return 0;
 }
 int eNewEvent(lua_State*L){
-	unsigned char*Event = (unsigned char*)lua_newuserdatauv(L,sizeof(char),2);
+	unsigned char*Event = (unsigned char*)lua_newuserdatauv(L,sizeof(unsigned char),2);
 	*Event = '\0';
 	lua_pushvalue(L,lua_upvalueindex(1));
 	lua_setmetatable(L,-2);
@@ -226,8 +221,8 @@ int eFire(lua_State*L){
 	while(lua_type(L,-1)!=LUA_TNIL){
 		Connection*con = (Connection*)lua_touserdata(L,-1);
 		if(con->Connected&&!con->ToDisconnect){
-			unsigned char NotRunning = !con->Running;
-			if(NotRunning)
+			unsigned char NotRunningCon = !con->Running;
+			if(NotRunningCon)
 				con->Running = '\xFF';
 			lua_getiuservalue(L,-1,1);
 			for(int i=2;i<=top;i++)
@@ -236,13 +231,10 @@ int eFire(lua_State*L){
 			lua_settop(L,argtop);
 			if(err==LUA_ERRRUN){
 				printLiteral("\n| Connection Point:\n");
-				if(con->DebugString)
-					fwrite(con->DebugString,sizeof(char),con->DebugStringLength,stdout);
-				else
-					printLiteral("(out of memory)");
+				fwrite(con->DebugString,sizeof(char),con->DebugStringLength,stdout);
 				printLiteral("\n| End");
 			}
-			if(NotRunning){
+			if(NotRunningCon){
 				con->Running = '\0';
 				if(con->ToDisconnect){
 					con->ToDisconnect = '\0';
@@ -294,7 +286,7 @@ int eFire(lua_State*L){
 				const char*str2 = lua_tolstring(L,-1,&size);
 				fwrite(str2,sizeof(char),size,stdout);
 				printLiteral("\n| End\n");
-				if(W->CloseOnError){
+				if(W->CloseOnError)
 					/* pass error object ???? (so __close metemethod can see it) */
 					if(lua_resetthread(thread)!=LUA_OK){ /* should i really warn for this??? */
 						lua_xmove(thread,L,1);
@@ -302,7 +294,6 @@ int eFire(lua_State*L){
 						errMessage(L);
 						putchar('\n');
 					}
-				}
 			}else
 				lua_pop(thread,nresults);
 		}else
@@ -347,9 +338,7 @@ int eFire(lua_State*L){
 	return 0;
 }
 void loadEventLibrary(lua_State*L){
-	lua_createtable(L,0,3); /* Connections metatable */
-	lua_pushcfunction(L,eConnectionGC);
-	lua_setfield(L,-2,"__gc");
+	lua_createtable(L,0,2); /* Connections metatable */
 	lua_pushliteral(L,"locked");
 	lua_setfield(L,-2,"__metatable");
 	lua_pushstring(L,E_CONNECTION_NAME);
