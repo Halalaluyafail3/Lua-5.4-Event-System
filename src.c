@@ -193,7 +193,8 @@ int eWait(lua_State*L){
 	luaL_argcheck(L,lua_isboolean(L,2)||lua_isnoneornil(L,2),2,"boolean, nil, or none expected");
 	unsigned char WValue = !lua_isnone(L,2)&&lua_toboolean(L,2)?'\0':'\xFF';
 	WThread*W = (WThread*)lua_newuserdatauv(L,sizeof(WThread),3);
-	W->Running = '\0',W->CloseOnError = WValue;
+	W->Running = '\0';
+	W->CloseOnError = WValue;
 	lua_pushvalue(L,lua_upvalueindex(1));
 	lua_setmetatable(L,-2);
 	if(lua_getiuservalue(L,1,2)!=LUA_TNIL){ /* has next */
