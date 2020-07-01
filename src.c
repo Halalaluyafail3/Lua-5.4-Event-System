@@ -1,4 +1,5 @@
 #include<stdio.h>
+#include<stddef.h>
 /* Connection system for Lua 5.4 */
 #define E_CONNECTION_NAME "Connection"
 /*
