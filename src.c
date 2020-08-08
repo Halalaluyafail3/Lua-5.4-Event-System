@@ -126,43 +126,48 @@ int eConnect(lua_State*L){
 	lua_setiuservalue(L,-2,4); /* set event */
 	return 1;
 }
-int eDisconnect(lua_State*L){
-	Connection*con = (Connection*)luaL_checkudata(L,1,E_CONNECTION_NAME);
+void Disconnect(lua_State*L,int idx){
+	idx = lua_absindex(L,idx);
+	Connection*con = (Connection*)lua_touserdata(L,idx);
 	if(con->Connected)
 		if(con->Running)
 			con->ToDisconnect = 0xFF;
 		else{
 			con->Connected = 0;
-			if(lua_getiuservalue(L,1,3)!=LUA_TNIL) /* has previous */
-				if(lua_getiuservalue(L,1,2)!=LUA_TNIL){ /* has previous and next */
+			if(lua_getiuservalue(L,idx,3)!=LUA_TNIL) /* has previous */
+				if(lua_getiuservalue(L,idx,2)!=LUA_TNIL){ /* has previous and next */
 					lua_pushvalue(L,-1);
 					lua_setiuservalue(L,-3,2); /* set previous's next */
 					lua_pushvalue(L,-2);
 					lua_setiuservalue(L,-2,3); /* set next's previous */
 					lua_pushnil(L);
 					lua_pushnil(L);
-					lua_setiuservalue(L,1,2); /* remove next */
-					lua_setiuservalue(L,1,3); /* remove previous */
+					lua_setiuservalue(L,idx,2); /* remove next */
+					lua_setiuservalue(L,idx,3); /* remove previous */
 				}else{ /* has previous and no next */
 					lua_setiuservalue(L,-2,2); /* remove previous's next */
 					lua_pushnil(L);
-					lua_setiuservalue(L,1,3); /* remove previous */
+					lua_setiuservalue(L,idx,3); /* remove previous */
 				}
 			else /* no previous */
-				if(lua_getiuservalue(L,1,2)!=LUA_TNIL){ /* no previous but has a next */
-					lua_getiuservalue(L,1,4);
+				if(lua_getiuservalue(L,idx,2)!=LUA_TNIL){ /* no previous but has a next */
+					lua_getiuservalue(L,idx,4);
 					lua_pushvalue(L,-2);
 					lua_setiuservalue(L,-2,1); /* new start */
 					lua_pushnil(L);
 					lua_setiuservalue(L,-3,3); /* remove next's previous */
 					lua_pushnil(L);
-					lua_setiuservalue(L,1,2); /* remove next */
+					lua_setiuservalue(L,idx,2); /* remove next */
 				}else{ /* no previous and no next */
-					lua_getiuservalue(L,1,4);
+					lua_getiuservalue(L,idx,4);
 					lua_pushnil(L);
 					lua_setiuservalue(L,-2,1); /* remove start */
 				}
 		}
+}
+int eDisconnect(lua_State*L){
+	luaL_checkudata(L,1,E_CONNECTION_NAME);
+	Disconnect(L,1);
 	return 0;
 }
 int eReconnect(lua_State*L){
@@ -241,10 +246,9 @@ int eFire(lua_State*L){
 				if(con->ToDisconnect){
 					con->ToDisconnect = 0;
 					lua_getiuservalue(L,-1,2);
-					lua_pushcfunction(L,eDisconnect);
-					lua_pushvalue(L,-3);
-					lua_call(L,1,0);
-					lua_remove(L,-2);
+					lua_insert(L,-2);
+					Disconnect(L,-1);
+					lua_settop(L,argtop);
 				}else{
 					lua_getiuservalue(L,-1,2);
 					lua_remove(L,-2);
