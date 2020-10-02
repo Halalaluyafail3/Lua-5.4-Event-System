@@ -33,13 +33,13 @@ uservalue 3 - the thread
 typedef struct WThread{
 	unsigned char CloseOnError,Running;
 }WThread;
-#define printLiteral(s) fwrite(s,sizeof(char),sizeof(s)-1,stdout)
+#define printLiteral(s) fwrite(s,sizeof(char),sizeof(s)-1,stderr)
 void errMessage(lua_State*L){
 	switch(lua_type(L,-1)){
 		case LUA_TSTRING:{
 			size_t size;
 			const char*str = lua_tolstring(L,-1,&size);
-			fwrite(str,sizeof(char),size,stdout);
+			fwrite(str,sizeof(char),size,stderr);
 			break;
 		}
 		case LUA_TNUMBER:{
@@ -66,7 +66,7 @@ void errMessage(lua_State*L){
 			if(tt==LUA_TSTRING){
 				size_t size;
 				const char*str = lua_tolstring(L,-1,&size);
-				fwrite(str,sizeof(char),size,stdout);
+				fwrite(str,sizeof(char),size,stderr);
 				lua_pop(L,1);
 				printf(": %p",lua_topointer(L,-1));
 			}else{
@@ -90,7 +90,7 @@ int eErrorHandler(lua_State*L){
 	luaL_traceback(L,L,NULL,0);
 	size_t size;
 	const char*str = lua_tolstring(L,2,&size);
-	fwrite(str,sizeof(char),size,stdout);
+	fwrite(str,sizeof(char),size,stderr);
 	return 0;
 }
 int eConnect(lua_State*L){
@@ -238,8 +238,8 @@ int eFire(lua_State*L){
 			lua_settop(L,argtop);
 			if(err==LUA_ERRRUN){
 				printLiteral("\n| Connection Point:\n");
-				fwrite(con->DebugString,sizeof(char),con->DebugStringLength,stdout);
-				printLiteral("\n| End");
+				fwrite(con->DebugString,sizeof(char),con->DebugStringLength,stderr);
+				printLiteral("\n| End\n");
 			}
 			if(NotRunningCon){
 				con->Running = 0;
@@ -286,11 +286,11 @@ int eFire(lua_State*L){
 				luaL_traceback(L,thread,NULL,0);
 				size_t size;
 				const char*str = lua_tolstring(L,-1,&size);
-				fwrite(str,sizeof(char),size,stdout);
+				fwrite(str,sizeof(char),size,stderr);
 				printLiteral("\n| Fire Point:\n");
 				luaL_traceback(L,L,NULL,0);
 				const char*str2 = lua_tolstring(L,-1,&size);
-				fwrite(str2,sizeof(char),size,stdout);
+				fwrite(str2,sizeof(char),size,stderr);
 				printLiteral("\n| End\n");
 				if(W->CloseOnError)
 					/* pass error object ???? (so __close metemethod can see it) */
