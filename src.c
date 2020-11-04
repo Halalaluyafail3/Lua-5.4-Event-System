@@ -34,11 +34,11 @@ typedef struct WThread{
 	unsigned char CloseOnError,Running;
 }WThread;
 #define printLiteral(s) fwrite(s,sizeof(char),sizeof(s)-1,stderr)
-void errMessage(lua_State*L){
+void errMessage(lua_State *L){
 	switch(lua_type(L,-1)){
 		case LUA_TSTRING:{
 			size_t size;
-			const char*str = lua_tolstring(L,-1,&size);
+			const char *str = lua_tolstring(L,-1,&size);
 			fwrite(str,sizeof(char),size,stderr);
 			break;
 		}
@@ -63,48 +63,48 @@ void errMessage(lua_State*L){
 		}
 		default:{
 			int tt = luaL_getmetafield(L,-1,"__name");
-			if(tt==LUA_TSTRING){
+			if(tt == LUA_TSTRING){
 				size_t size;
-				const char*str = lua_tolstring(L,-1,&size);
+				const char *str = lua_tolstring(L,-1,&size);
 				fwrite(str,sizeof(char),size,stderr);
 				lua_pop(L,1);
 				printf(": %p",lua_topointer(L,-1));
 			}else{
-				if(tt!=LUA_TNIL)
+				if(tt != LUA_TNIL)
 					lua_pop(L,1);
 				printf("%s: %p",luaL_typename(L,-1),lua_topointer(L,-1));
 			}
 		}
 	}
 }
-int eIsConnected(lua_State*L){
-	Connection*con = (Connection*)luaL_checkudata(L,1,E_CONNECTION_NAME);
+int eIsConnected(lua_State *L){
+	Connection *con = (Connection*)luaL_checkudata(L,1,E_CONNECTION_NAME);
 	lua_pushboolean(L,con->Connected&&!con->ToDisconnect);
 	return 1;
 }
-int eErrorHandler(lua_State*L){
+int eErrorHandler(lua_State *L){
 	lua_settop(L,1);
 	printLiteral("| Error message (Connection):\n");
 	errMessage(L);
 	printLiteral("\n| Traceback:\n");
 	luaL_traceback(L,L,NULL,0);
 	size_t size;
-	const char*str = lua_tolstring(L,2,&size);
+	const char *str = lua_tolstring(L,2,&size);
 	fwrite(str,sizeof(char),size,stderr);
 	return 0;
 }
-int eConnect(lua_State*L){
+int eConnect(lua_State *L){
 	luaL_checkudata(L,1,E_EVENT_NAME);
 	luaL_checktype(L,2,LUA_TFUNCTION);
 	luaL_traceback(L,L,NULL,0);
 	size_t size;
-	const char*str = lua_tolstring(L,-1,&size);
-	Connection*con = (Connection*)lua_newuserdatauv(L,offsetof(Connection,DebugString)+(size+1)*sizeof(char),4);
+	const char *str = lua_tolstring(L,-1,&size);
+	Connection *con = (Connection*)lua_newuserdatauv(L,offsetof(Connection,DebugString)+(size+1)*sizeof(char),4);
 	con->Connected = 0xFF;
 	con->ToDisconnect = 0;
 	con->Running = 0;
 	con->DebugStringLength = size;
-	char*Debug = con->DebugString;
+	char *Debug = con->DebugString;
 	for(size_t i=0;i<=size;i++)
 		Debug[i] = str[i];
 	lua_remove(L,-2);
@@ -113,7 +113,7 @@ int eConnect(lua_State*L){
 	lua_pushvalue(L,2);
 	lua_setiuservalue(L,-2,1); /* set function */
 	/* current next */
-	if(lua_getiuservalue(L,1,1)!=LUA_TNIL){ /* has next */
+	if(lua_getiuservalue(L,1,1) != LUA_TNIL){ /* has next */
 		lua_pushvalue(L,-1);
 		lua_setiuservalue(L,-3,2); /* set next */
 		lua_pushvalue(L,-2);
@@ -126,16 +126,16 @@ int eConnect(lua_State*L){
 	lua_setiuservalue(L,-2,4); /* set event */
 	return 1;
 }
-void Disconnect(lua_State*L,int idx){
+void Disconnect(lua_State *L,int idx){
 	idx = lua_absindex(L,idx);
-	Connection*con = (Connection*)lua_touserdata(L,idx);
+	Connection *con = (Connection*)lua_touserdata(L,idx);
 	if(con->Connected)
 		if(con->Running)
 			con->ToDisconnect = 0xFF;
 		else{
 			con->Connected = 0;
-			if(lua_getiuservalue(L,idx,3)!=LUA_TNIL) /* has previous */
-				if(lua_getiuservalue(L,idx,2)!=LUA_TNIL){ /* has previous and next */
+			if(lua_getiuservalue(L,idx,3) != LUA_TNIL) /* has previous */
+				if(lua_getiuservalue(L,idx,2) != LUA_TNIL){ /* has previous and next */
 					lua_pushvalue(L,-1);
 					lua_setiuservalue(L,-3,2); /* set previous's next */
 					lua_pushvalue(L,-2);
@@ -150,7 +150,7 @@ void Disconnect(lua_State*L,int idx){
 					lua_setiuservalue(L,idx,3); /* remove previous */
 				}
 			else /* no previous */
-				if(lua_getiuservalue(L,idx,2)!=LUA_TNIL){ /* no previous but has a next */
+				if(lua_getiuservalue(L,idx,2) != LUA_TNIL){ /* no previous but has a next */
 					lua_getiuservalue(L,idx,4);
 					lua_pushvalue(L,-2);
 					lua_setiuservalue(L,-2,1); /* new start */
@@ -165,17 +165,17 @@ void Disconnect(lua_State*L,int idx){
 				}
 		}
 }
-int eDisconnect(lua_State*L){
+int eDisconnect(lua_State *L){
 	luaL_checkudata(L,1,E_CONNECTION_NAME);
 	Disconnect(L,1);
 	return 0;
 }
-int eReconnect(lua_State*L){
+int eReconnect(lua_State *L){
 	Connection*con = (Connection*)luaL_checkudata(L,1,E_CONNECTION_NAME);
 	if(!con->Connected){
 		con->Connected = 0xFF;
 		lua_getiuservalue(L,1,4);
-		if(lua_getiuservalue(L,-1,1)!=LUA_TNIL){ /* has next */
+		if(lua_getiuservalue(L,-1,1) != LUA_TNIL){ /* has next */
 			lua_pushvalue(L,1);
 			lua_setiuservalue(L,-2,3); /* set next's previous */
 			lua_setiuservalue(L,1,2); /* set next */
@@ -187,23 +187,23 @@ int eReconnect(lua_State*L){
 		con->ToDisconnect = 0;
 	return 0;
 }
-int eNewEvent(lua_State*L){
-	unsigned char*Event = (unsigned char*)lua_newuserdatauv(L,sizeof(unsigned char),2);
+int eNewEvent(lua_State *L){
+	unsigned char *Event = (unsigned char*)lua_newuserdatauv(L,sizeof(unsigned char),2);
 	*Event = 0;
 	lua_pushvalue(L,lua_upvalueindex(1));
 	lua_setmetatable(L,-2);
 	return 1;
 }
-int eWait(lua_State*L){
+int eWait(lua_State *L){
 	luaL_checkudata(L,1,E_EVENT_NAME);
 	luaL_argcheck(L,lua_isboolean(L,2)||lua_isnoneornil(L,2),2,"boolean, nil, or none expected");
 	unsigned char WValue = !lua_isnone(L,2)&&lua_toboolean(L,2)?0:0xFF;
-	WThread*W = (WThread*)lua_newuserdatauv(L,sizeof(WThread),3);
+	WThread *W = (WThread*)lua_newuserdatauv(L,sizeof(WThread),3);
 	W->Running = 0;
 	W->CloseOnError = WValue;
 	lua_pushvalue(L,lua_upvalueindex(1));
 	lua_setmetatable(L,-2);
-	if(lua_getiuservalue(L,1,2)!=LUA_TNIL){ /* has next */
+	if(lua_getiuservalue(L,1,2) != LUA_TNIL){ /* has next */
 		lua_pushvalue(L,-2);
 		lua_setiuservalue(L,-2,2); /* set next's previous */
 		lua_setiuservalue(L,-2,1); /* set next */
@@ -215,8 +215,8 @@ int eWait(lua_State*L){
 	lua_settop(L,0);
 	return lua_yield(L,0);
 }
-int eFire(lua_State*L){
-	unsigned char*Event = (unsigned char*)luaL_checkudata(L,1,E_EVENT_NAME);
+int eFire(lua_State *L){
+	unsigned char *Event = (unsigned char*)luaL_checkudata(L,1,E_EVENT_NAME);
 	int top = lua_gettop(L),mtop = top-1,ptop = top+1,argtop = top+2;
 	luaL_checkstack(L,argtop,"too many arguments");
 	unsigned char NotRunning = !*Event;
@@ -225,8 +225,8 @@ int eFire(lua_State*L){
 	/* event, args, err_handler, connection, function, args */
 	lua_pushcfunction(L,eErrorHandler);
 	lua_getiuservalue(L,1,1);
-	while(lua_type(L,-1)!=LUA_TNIL){
-		Connection*con = (Connection*)lua_touserdata(L,-1);
+	while(lua_type(L,-1) != LUA_TNIL){
+		Connection *con = (Connection*)lua_touserdata(L,-1);
 		if(con->Connected&&!con->ToDisconnect){
 			unsigned char NotRunningCon = !con->Running;
 			if(NotRunningCon)
@@ -236,7 +236,7 @@ int eFire(lua_State*L){
 				lua_pushvalue(L,i);
 			int err = lua_pcall(L,mtop,0,ptop);
 			lua_settop(L,argtop);
-			if(err==LUA_ERRRUN){
+			if(err == LUA_ERRRUN){
 				printLiteral("\n| Connection Point:\n");
 				fwrite(con->DebugString,sizeof(char),con->DebugStringLength,stderr);
 				printLiteral("\n| End\n");
@@ -265,36 +265,36 @@ int eFire(lua_State*L){
 	lua_settop(L,top);
 	/* event, args, WThread, thread, args */
 	lua_getiuservalue(L,1,2);
-	while(lua_type(L,-1)!=LUA_TNIL){
-		WThread*W = (WThread*)lua_touserdata(L,-1);
+	while(lua_type(L,-1) != LUA_TNIL){
+		WThread *W = (WThread*)lua_touserdata(L,-1);
 		if(W->Running)
 			break;
 		W->Running = 0xFF;
 		lua_getiuservalue(L,-1,3);
-		lua_State*thread = lua_tothread(L,-1);
+		lua_State *thread = lua_tothread(L,-1);
 		if(lua_checkstack(thread,mtop)){
 			for(int i=2;i<=top;i++)
 				lua_pushvalue(L,i);
 			lua_xmove(L,thread,mtop);
 			int nresults;
 			int result = lua_resume(thread,L,mtop,&nresults);
-			if(result!=LUA_OK&&result!=LUA_YIELD){
+			if(result != LUA_OK&&result != LUA_YIELD){
 				lua_xmove(thread,L,1);
 				printLiteral("| Error Message (Wait Resume):\n");
 				errMessage(L);
 				printLiteral("\n| Traceback:\n");
 				luaL_traceback(L,thread,NULL,0);
 				size_t size;
-				const char*str = lua_tolstring(L,-1,&size);
+				const char *str = lua_tolstring(L,-1,&size);
 				fwrite(str,sizeof(char),size,stderr);
 				printLiteral("\n| Fire Point:\n");
 				luaL_traceback(L,L,NULL,0);
-				const char*str2 = lua_tolstring(L,-1,&size);
+				const char *str2 = lua_tolstring(L,-1,&size);
 				fwrite(str2,sizeof(char),size,stderr);
 				printLiteral("\n| End\n");
 				if(W->CloseOnError)
 					/* pass error object ???? (so __close metemethod can see it) */
-					if(lua_resetthread(thread)!=LUA_OK){ /* should i really warn for this??? */
+					if(lua_resetthread(thread) != LUA_OK){ /* should i really warn for this??? */
 						lua_xmove(thread,L,1);
 						printLiteral("| Error closing thread: ");
 						errMessage(L);
@@ -306,8 +306,8 @@ int eFire(lua_State*L){
 			printLiteral("| too many arguments\n");
 		W->Running = 0;
 		lua_settop(L,ptop);
-		if(lua_getiuservalue(L,-1,2)!=LUA_TNIL) /* has previous */
-			if(lua_getiuservalue(L,-2,1)!=LUA_TNIL){ /* has previous and next */
+		if(lua_getiuservalue(L,-1,2) != LUA_TNIL) /* has previous */
+			if(lua_getiuservalue(L,-2,1) != LUA_TNIL){ /* has previous and next */
 				lua_pushvalue(L,-1);
 				lua_setiuservalue(L,-3,1); /* set previous's next */
 				lua_pushvalue(L,-2);
@@ -326,7 +326,7 @@ int eFire(lua_State*L){
 				lua_pushnil(L);
 			}
 		else /* no previous */
-			if(lua_getiuservalue(L,-2,1)!=LUA_TNIL){ /* has next but no previous */
+			if(lua_getiuservalue(L,-2,1) != LUA_TNIL){ /* has next but no previous */
 				lua_pushnil(L);
 				lua_setiuservalue(L,-2,2); /* remove next's previous */
 				lua_pushvalue(L,-1);
@@ -343,7 +343,7 @@ int eFire(lua_State*L){
 		*Event = 0;
 	return 0;
 }
-void loadEventLibrary(lua_State*L){
+void loadEventLibrary(lua_State *L){
 	lua_createtable(L,0,2); /* Connections metatable */
 	lua_pushliteral(L,"locked");
 	lua_setfield(L,-2,"__metatable");
