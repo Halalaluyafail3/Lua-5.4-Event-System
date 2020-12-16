@@ -87,7 +87,7 @@ int eErrorHandler(lua_State *L){
 	printLiteral("| Error message (Connection):\n");
 	errMessage(L);
 	printLiteral("\n| Traceback:\n");
-	luaL_traceback(L,L,NULL,0);
+	luaL_traceback(L,L,NULL,1);
 	size_t size;
 	const char *str = lua_tolstring(L,2,&size);
 	fwrite(str,sizeof(char),size,stderr);
