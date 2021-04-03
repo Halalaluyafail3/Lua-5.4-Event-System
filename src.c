@@ -7,7 +7,7 @@
 /*
 Connection uses 3 bools to store its state, a pointer for a string, and a size_t for the string length
 IsConnected - whether the Connection is connected
-ToDiscconnect - whether the Connection is going to be disconnect (it disconnected during it being fired)
+IsWaitingToDiscconnect - whether the Connection is going to be disconnect (it disconnected during it being fired)
 IsRunning - whether the Connection is running
 uservalue 1 - function
 uservalue 2 - next Connection
@@ -17,13 +17,14 @@ uservalue 4 - Event
 typedef struct Connection{
 	size_t DebugStringLength;
 	bool IsConnected:1;
-	bool WaitingToDisconnect:1;
+	bool IsWaitingToDisconnect:1;
 	bool IsRunning:1;
 	char DebugString[];
 }Connection;
 #define E_EVENT_NAME "Event"
 /*
 Event uses its 1 bool of data to represent whether it is firing or not
+IsRunning - whether the Event is running
 uservalue 1 - first connection
 uservalue 2 - first waiting thread
 */
@@ -33,6 +34,8 @@ typedef struct Event{
 #define E_WTHREAD_NAME "WThread"
 /*
 WThread uses its 2 bools of data to represent its state, whether it's being run, and whether it should close the thread upon erroring
+ShouldCloseOnError - detemines if the thread is closed when the thread that is resumed errors
+IsRunning - whether the thread is running
 uservalue 1 - next WThread
 uservalue 2 - previous WThread
 uservalue 3 - the thread
@@ -90,7 +93,7 @@ void PrintErrorMessage(lua_State *L){
 }
 int EIsConnected(lua_State *L){
 	Connection *Con = luaL_checkudata(L,1,E_CONNECTION_NAME);
-	lua_pushboolean(L,Con->IsConnected&&!Con->WaitingToDisconnect);
+	lua_pushboolean(L,Con->IsConnected&&!Con->IsWaitingToDisconnect);
 	return 1;
 }
 int ConnectionErrorHandler(lua_State *L){
@@ -112,7 +115,7 @@ int EConnect(lua_State *L){
 	const char *String = lua_tolstring(L,-1,&StringLength);
 	Connection *con = lua_newuserdatauv(L,offsetof(Connection,DebugString)+(StringLength+1)*sizeof(char),4);
 	con->IsConnected = true;
-	con->WaitingToDisconnect = false;
+	con->IsWaitingToDisconnect = false;
 	con->IsRunning = false;
 	con->DebugStringLength = StringLength;
 	char *Debug = con->DebugString;
@@ -141,7 +144,7 @@ void Disconnect(lua_State *L,int Index){
 	Connection *Con = lua_touserdata(L,Index);
 	if(Con->IsConnected){
 		if(Con->IsRunning){
-			Con->WaitingToDisconnect = true;
+			Con->IsWaitingToDisconnect = true;
 		}else{
 			Con->IsConnected = false;
 			if(lua_getiuservalue(L,Index,3)!=LUA_TNIL){ /* has previous */
@@ -196,8 +199,8 @@ int EReconnect(lua_State *L){
 		}
 		lua_pushvalue(L,1);
 		lua_setiuservalue(L,-2,1); /* new start */
-	}else if(Con->WaitingToDisconnect){
-		Con->WaitingToDisconnect = false;
+	}else if(Con->IsWaitingToDisconnect){
+		Con->IsWaitingToDisconnect = false;
 	}
 	return 0;
 }
@@ -246,7 +249,7 @@ int EFire(lua_State *L){
 	lua_getiuservalue(L,1,1);
 	while(lua_type(L,-1)!=LUA_TNIL){
 		Connection *Con = lua_touserdata(L,-1);
-		if(Con->IsConnected&&!Con->WaitingToDisconnect){
+		if(Con->IsConnected&&!Con->IsWaitingToDisconnect){
 			bool NotRunningCon = !Con->IsRunning;
 			if(NotRunningCon){
 				Con->IsRunning = true;
@@ -264,8 +267,8 @@ int EFire(lua_State *L){
 			}
 			if(NotRunningCon){
 				Con->IsRunning = false;
-				if(Con->WaitingToDisconnect){
-					Con->WaitingToDisconnect = false;
+				if(Con->IsWaitingToDisconnect){
+					Con->IsWaitingToDisconnect = false;
 					lua_getiuservalue(L,-1,2);
 					lua_insert(L,-2);
 					Disconnect(L,-1);
