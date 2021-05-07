@@ -318,21 +318,20 @@ int EFire(lua_State *L){
 				size_t StringLength2;
 				const char *String2 = lua_tolstring(L,-1,&StringLength2);
 				fwrite(String2,sizeof(char),StringLength2,stderr);
-				PrintLiteralError("\n| End\n");
 				if(Waiting->ShouldCloseOnError){
 					/* pass error object ???? (so __close metemethod can see it) */
 					if(lua_resetthread(Thread)!=LUA_OK){ /* should i really warn for this??? */
 						lua_xmove(Thread,L,1);
-						PrintLiteralError("| Error closing thread: ");
+						PrintLiteralError("\n| Error closing thread:\n");
 						PrintErrorMessage(L);
-						putchar('\n');
 					}
 				}
+				PrintLiteralError("\n| End\n");
 			}else{
 				lua_pop(Thread,NResults);
 			}
 		}else{
-			PrintLiteralError("| too many arguments\n");
+			PrintLiteralError("| Too many arguments to resume thread (Wait Resume)\n");
 		}
 		Waiting->IsRunning = false;
 		lua_settop(L,PTop);
