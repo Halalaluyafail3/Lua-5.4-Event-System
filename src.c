@@ -44,13 +44,13 @@ typedef struct WThread{
 	bool ShouldCloseOnError:1;
 	bool IsRunning:1;
 }WThread;
-#define PrintLiteralError(s) fwrite(s,sizeof(char),sizeof(s)/sizeof(char)-1,stderr)
+#define PrintLiteralError(s) fwrite(s,1,sizeof(s)-1,stderr)
 void PrintErrorMessage(lua_State *L){
 	switch(lua_type(L,-1)){
 		case LUA_TSTRING:{
 			size_t StringLength;
 			const char *String = lua_tolstring(L,-1,&StringLength);
-			fwrite(String,sizeof(char),StringLength,stderr);
+			fwrite(String,1,StringLength,stderr);
 			break;
 		}
 		case LUA_TNUMBER:{
@@ -78,7 +78,7 @@ void PrintErrorMessage(lua_State *L){
 			if(TT==LUA_TSTRING){
 				size_t StringLength;
 				const char *String = lua_tolstring(L,-1,&StringLength);
-				fwrite(String,sizeof(char),StringLength,stderr);
+				fwrite(String,1,StringLength,stderr);
 				lua_pop(L,1);
 				printf(": %p",lua_topointer(L,-1));
 			}else{
@@ -104,7 +104,7 @@ int ConnectionErrorHandler(lua_State *L){
 	luaL_traceback(L,L,NULL,1);
 	size_t StringLength;
 	const char *String = lua_tolstring(L,2,&StringLength);
-	fwrite(String,sizeof(char),StringLength,stderr);
+	fwrite(String,1,StringLength,stderr);
 	return 0;
 }
 int EConnect(lua_State *L){
@@ -113,13 +113,13 @@ int EConnect(lua_State *L){
 	luaL_traceback(L,L,NULL,0);
 	size_t StringLength;
 	const char *String = lua_tolstring(L,-1,&StringLength);
-	Connection *con = lua_newuserdatauv(L,offsetof(Connection,DebugString)+(StringLength+1)*sizeof(char),4);
+	Connection *con = lua_newuserdatauv(L,offsetof(Connection,DebugString)+StringLength+1,4);
 	con->IsConnected = true;
 	con->IsWaitingToDisconnect = false;
 	con->IsRunning = false;
 	con->DebugStringLength = StringLength;
 	char *Debug = con->DebugString;
-	memcpy(Debug,String,(StringLength+1)*sizeof(char));
+	memcpy(Debug,String,StringLength+1);
 	lua_remove(L,-2);
 	lua_pushvalue(L,lua_upvalueindex(1));
 	lua_setmetatable(L,-2);
@@ -262,7 +262,7 @@ int EFire(lua_State *L){
 			lua_settop(L,ArgTop);
 			if(Error==LUA_ERRRUN){
 				PrintLiteralError("\n| Connection Point:\n");
-				fwrite(Con->DebugString,sizeof(char),Con->DebugStringLength,stderr);
+				fwrite(Con->DebugString,1,Con->DebugStringLength,stderr);
 				PrintLiteralError("\n| End\n");
 			}
 			if(NotRunningCon){
@@ -312,12 +312,12 @@ int EFire(lua_State *L){
 				luaL_traceback(L,Thread,NULL,0);
 				size_t StringLength;
 				const char *String = lua_tolstring(L,-1,&StringLength);
-				fwrite(String,sizeof(char),StringLength,stderr);
+				fwrite(String,1,StringLength,stderr);
 				PrintLiteralError("\n| Fire Point:\n");
 				luaL_traceback(L,L,NULL,0);
 				size_t StringLength2;
 				const char *String2 = lua_tolstring(L,-1,&StringLength2);
-				fwrite(String2,sizeof(char),StringLength2,stderr);
+				fwrite(String2,1,StringLength2,stderr);
 				if(Waiting->ShouldCloseOnError){
 					/* pass error object ???? (so __close metemethod can see it) */
 					if(lua_resetthread(Thread)!=LUA_OK){ /* should i really warn for this??? */
