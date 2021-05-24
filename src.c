@@ -157,10 +157,12 @@ void Disconnect(lua_State *L,int Index){
 					lua_pushnil(L);
 					lua_setiuservalue(L,Index,2); /* remove next */
 					lua_setiuservalue(L,Index,3); /* remove previous */
+					lua_pop(L,2);
 				}else{ /* has previous and no next */
 					lua_setiuservalue(L,-2,2); /* remove previous's next */
 					lua_pushnil(L);
 					lua_setiuservalue(L,Index,3); /* remove previous */
+					lua_pop(L,1);
 				}
 			}else{ /* no previous */
 				if(lua_getiuservalue(L,Index,2)!=LUA_TNIL){ /* no previous but has a next */
@@ -171,10 +173,12 @@ void Disconnect(lua_State *L,int Index){
 					lua_setiuservalue(L,-3,3); /* remove next's previous */
 					lua_pushnil(L);
 					lua_setiuservalue(L,Index,2); /* remove next */
+					lua_pop(L,3);
 				}else{ /* no previous and no next */
 					lua_getiuservalue(L,Index,4);
 					lua_pushnil(L);
 					lua_setiuservalue(L,-2,1); /* remove start */
+					lua_pop(L,3);
 				}
 			}
 		}
