@@ -44,7 +44,6 @@ typedef struct WThread{
 	bool ShouldCloseOnError:1;
 	bool IsRunning:1;
 }WThread;
-#define PrintLiteralError(s) fwrite(s,1,sizeof(s)-1,stderr)
 void PrintErrorMessage(lua_State *L){
 	switch(lua_type(L,-1)){
 		case LUA_TSTRING:{
@@ -62,14 +61,14 @@ void PrintErrorMessage(lua_State *L){
 			break;
 		}
 		case LUA_TNIL:{
-			PrintLiteralError("nil");
+			fputs("nil",stderr);
 			break;
 		}
 		case LUA_TBOOLEAN:{
 			if(lua_toboolean(L,-1)){
-				PrintLiteralError("true");
+				fputs("true",stderr);
 			}else{
-				PrintLiteralError("false");
+				fputs("false",stderr);
 			}
 			break;
 		}
@@ -80,12 +79,12 @@ void PrintErrorMessage(lua_State *L){
 				const char *String = lua_tolstring(L,-1,&StringLength);
 				fwrite(String,1,StringLength,stderr);
 				lua_pop(L,1);
-				printf(": %p",lua_topointer(L,-1));
+				fprintf(stderr,": %p",lua_topointer(L,-1));
 			}else{
 				if(TT!=LUA_TNIL){
 					lua_pop(L,1);
 				}
-				printf("%s: %p",luaL_typename(L,-1),lua_topointer(L,-1));
+				fprintf(stderr,"%s: %p",luaL_typename(L,-1),lua_topointer(L,-1));
 			}
 			break;
 		}
@@ -95,17 +94,6 @@ int EIsConnected(lua_State *L){
 	Connection *Con = luaL_checkudata(L,1,E_CONNECTION_NAME);
 	lua_pushboolean(L,Con->IsConnected&&!Con->IsWaitingToDisconnect);
 	return 1;
-}
-int ConnectionErrorHandler(lua_State *L){
-	lua_settop(L,1);
-	PrintLiteralError("| Error message (Connection):\n");
-	PrintErrorMessage(L);
-	PrintLiteralError("\n| Traceback:\n");
-	luaL_traceback(L,L,NULL,1);
-	size_t StringLength;
-	const char *String = lua_tolstring(L,2,&StringLength);
-	fwrite(String,1,StringLength,stderr);
-	return 0;
 }
 int EConnect(lua_State *L){
 	luaL_checkudata(L,1,E_EVENT_NAME);
@@ -237,6 +225,18 @@ int EWait(lua_State *L){
 	lua_settop(L,0);
 	return lua_yield(L,0);
 }
+int ConnectionErrorHandler(lua_State *L){
+	lua_settop(L,1);
+	fputs("| Error message (Connection):\n",stderr);
+	PrintErrorMessage(L);
+	fputs("\n| Traceback:\n",stderr);
+	luaL_traceback(L,L,NULL,1);
+	size_t StringLength;
+	const char *String = lua_tolstring(L,2,&StringLength);
+	fwrite(String,1,StringLength,stderr);
+	fputc('\n',stderr);
+	return 0;
+}
 int EFire(lua_State *L){
 	Event *Running = luaL_checkudata(L,1,E_EVENT_NAME);
 	int Top = lua_gettop(L);
@@ -265,9 +265,9 @@ int EFire(lua_State *L){
 			int Error = lua_pcall(L,MTop,0,PTop);
 			lua_settop(L,ArgTop);
 			if(Error==LUA_ERRRUN){
-				PrintLiteralError("\n| Connection Point:\n");
+				fputs("| Connection Point:\n",stderr);
 				fwrite(Con->DebugString,1,Con->DebugStringLength,stderr);
-				PrintLiteralError("\n| End\n");
+				fputs("\n| End\n",stderr);
 			}
 			if(NotRunningCon){
 				Con->IsRunning = false;
@@ -310,14 +310,14 @@ int EFire(lua_State *L){
 			int Result = lua_resume(Thread,L,MTop,&NResults);
 			if(Result!=LUA_OK&&Result!=LUA_YIELD){
 				lua_xmove(Thread,L,1);
-				PrintLiteralError("| Error Message (Wait Resume):\n");
+				fputs("| Error Message (Wait Resume):\n",stderr);
 				PrintErrorMessage(L);
-				PrintLiteralError("\n| Traceback:\n");
+				fputs("\n| Traceback:\n",stderr);
 				luaL_traceback(L,Thread,NULL,0);
 				size_t StringLength;
 				const char *String = lua_tolstring(L,-1,&StringLength);
 				fwrite(String,1,StringLength,stderr);
-				PrintLiteralError("\n| Fire Point:\n");
+				fputs("\n| Fire Point:\n",stderr);
 				luaL_traceback(L,L,NULL,0);
 				size_t StringLength2;
 				const char *String2 = lua_tolstring(L,-1,&StringLength2);
@@ -326,16 +326,16 @@ int EFire(lua_State *L){
 					/* pass error object ???? (so __close metemethod can see it) */
 					if(lua_resetthread(Thread)!=LUA_OK){ /* should i really warn for this??? */
 						lua_xmove(Thread,L,1);
-						PrintLiteralError("\n| Error closing thread:\n");
+						fputs("\n| Error closing thread:\n",stderr);
 						PrintErrorMessage(L);
 					}
 				}
-				PrintLiteralError("\n| End\n");
+				fputs("\n| End\n",stderr);
 			}else{
 				lua_pop(Thread,NResults);
 			}
 		}else{
-			PrintLiteralError("| Too many arguments to resume thread (Wait Resume)\n");
+			fputs("| Too many arguments to resume thread (Wait Resume)\n",stderr);
 		}
 		Waiting->IsRunning = false;
 		lua_settop(L,PTop);
