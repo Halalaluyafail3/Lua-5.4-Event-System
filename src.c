@@ -7,7 +7,7 @@
 /*
 Connection uses 3 bools to store its state, a pointer for a string, and a size_t for the string length
 IsConnected - whether the Connection is connected
-IsWaitingToDiscconnect - whether the Connection is going to be disconnect (it disconnected during it being fired)
+IsWaitingToDisconnect - whether the Connection is going to be disconnected (it disconnected during it being fired)
 IsRunning - whether the Connection is running
 uservalue 1 - function
 uservalue 2 - next Connection
