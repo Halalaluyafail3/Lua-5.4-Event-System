@@ -101,12 +101,12 @@ int EConnect(lua_State *L){
 	luaL_traceback(L,L,NULL,0);
 	size_t StringLength;
 	const char *String = lua_tolstring(L,-1,&StringLength);
-	Connection *con = lua_newuserdatauv(L,offsetof(Connection,DebugString)+StringLength+1,4);
-	con->IsConnected = true;
-	con->IsWaitingToDisconnect = false;
-	con->IsRunning = false;
-	con->DebugStringLength = StringLength;
-	char *Debug = con->DebugString;
+	Connection *Con = lua_newuserdatauv(L,offsetof(Connection,DebugString)+StringLength+1,4);
+	Con->IsConnected = true;
+	Con->IsWaitingToDisconnect = false;
+	Con->IsRunning = false;
+	Con->DebugStringLength = StringLength;
+	char *Debug = Con->DebugString;
 	memcpy(Debug,String,StringLength+1);
 	lua_remove(L,-2);
 	lua_pushvalue(L,lua_upvalueindex(1));
