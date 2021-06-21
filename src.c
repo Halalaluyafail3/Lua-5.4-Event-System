@@ -9,6 +9,8 @@ Connection uses 3 bools to store its state, a pointer for a string, and a size_t
 IsConnected - whether the Connection is connected
 IsWaitingToDisconnect - whether the Connection is going to be disconnected (it disconnected during it being fired)
 IsRunning - whether the Connection is running
+DebugStringLength - the length of DebugString
+DebugString - the traceback of where the connection was connected
 uservalue 1 - function
 uservalue 2 - next Connection
 uservalue 3 - previous Connection
