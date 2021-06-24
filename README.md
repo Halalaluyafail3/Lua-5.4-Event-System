@@ -20,11 +20,11 @@ Connects Function (which should be a function) to Event, and returns the Connect
 
 ### void __EDisconnect(Connection)
 
-Disconnects the Connection, preventing **all** further calls of the function from the Connection, including when the Connection would be fired by a __EFire call that was running during the call of __EDisconnect.
+Disconnects the Connection (if Connection is connected), preventing **all** further calls (until reconnection) of the function from the Connection, including when the Connection would be fired by a __EFire call that was running during the call of __EDisconnect.
 
 ### void __EReconnect(Connection)
 
-Reconnects the Connection.
+Reconnects the Connection (if Connection isn't connected).
 
 ### boolean __EIsConnected(Connection)
 
