@@ -36,4 +36,4 @@ Yields the thread until Event gets fired. In case of error, the thread will be c
 
 ### void __EFire(Event,...)
 
-Fires all connections, and then all waiting threads. The order in which connections and waiting threads fire is newest to oldest. A reconnected connection will be considered new; however, if there is an active call to the connection (the connection was disconnected during the call), reconnecting will maintain the current position. Connections (and reconnected connections) and waiting threads created during the call to __EFire will be ignored.
+Fires all connections, and then all waiting threads. The order in which connections and waiting threads fire is newest to oldest. A reconnected connection will be considered from the time of reconnection; however, if there is an active call to the connection (the connection was disconnected during the call), reconnecting will maintain the current position. Connections (and reconnected connections) and waiting threads created during the call to __EFire will be ignored.
