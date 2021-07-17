@@ -255,7 +255,7 @@ int EFire(lua_State *L){
 	lua_getiuservalue(L,1,1);
 	while(lua_type(L,-1)!=LUA_TNIL){
 		Connection *Con = lua_touserdata(L,-1);
-		if(Con->IsConnected&&!Con->IsWaitingToDisconnect){
+		if(!Con->IsWaitingToDisconnect){
 			bool NotRunningCon = !Con->IsRunning;
 			if(NotRunningCon){
 				Con->IsRunning = true;
