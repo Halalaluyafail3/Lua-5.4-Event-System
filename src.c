@@ -50,7 +50,7 @@ void PrintErrorMessage(lua_State *L){
 	switch(lua_type(L,-1)){
 		case LUA_TSTRING:{
 			size_t StringLength;
-			const char *String = lua_tolstring(L,-1,&StringLength);
+			const char *String=lua_tolstring(L,-1,&StringLength);
 			fwrite(String,1,StringLength,stderr);
 			break;
 		}
@@ -75,10 +75,10 @@ void PrintErrorMessage(lua_State *L){
 			break;
 		}
 		default:{
-			int TT = luaL_getmetafield(L,-1,"__name");
+			int TT=luaL_getmetafield(L,-1,"__name");
 			if(TT==LUA_TSTRING){
 				size_t StringLength;
-				const char *String = lua_tolstring(L,-1,&StringLength);
+				const char *String=lua_tolstring(L,-1,&StringLength);
 				fwrite(String,1,StringLength,stderr);
 				lua_pop(L,1);
 				fprintf(stderr,": %p",lua_topointer(L,-1));
@@ -93,7 +93,7 @@ void PrintErrorMessage(lua_State *L){
 	}
 }
 int EIsConnected(lua_State *L){
-	Connection *Con = luaL_checkudata(L,1,E_CONNECTION_NAME);
+	Connection *Con=luaL_checkudata(L,1,E_CONNECTION_NAME);
 	lua_pushboolean(L,Con->IsConnected&&!Con->IsWaitingToDisconnect);
 	return 1;
 }
@@ -102,13 +102,13 @@ int EConnect(lua_State *L){
 	luaL_checktype(L,2,LUA_TFUNCTION);
 	luaL_traceback(L,L,NULL,0);
 	size_t StringLength;
-	const char *String = lua_tolstring(L,-1,&StringLength);
-	Connection *Con = lua_newuserdatauv(L,offsetof(Connection,DebugString)+StringLength+1,4);
-	Con->IsConnected = true;
-	Con->IsWaitingToDisconnect = false;
-	Con->IsRunning = false;
-	Con->DebugStringLength = StringLength;
-	char *Debug = Con->DebugString;
+	const char *String=lua_tolstring(L,-1,&StringLength);
+	Connection *Con=lua_newuserdatauv(L,offsetof(Connection,DebugString)+StringLength+1,4);
+	Con->IsConnected=true;
+	Con->IsWaitingToDisconnect=false;
+	Con->IsRunning=false;
+	Con->DebugStringLength=StringLength;
+	char *Debug=Con->DebugString;
 	memcpy(Debug,String,StringLength+1);
 	lua_remove(L,-2);
 	lua_pushvalue(L,lua_upvalueindex(1));
@@ -130,13 +130,13 @@ int EConnect(lua_State *L){
 	return 1;
 }
 void Disconnect(lua_State *L,int Index){
-	Index = lua_absindex(L,Index);
-	Connection *Con = lua_touserdata(L,Index);
+	Index=lua_absindex(L,Index);
+	Connection *Con=lua_touserdata(L,Index);
 	if(Con->IsConnected){
 		if(Con->IsRunning){
-			Con->IsWaitingToDisconnect = true;
+			Con->IsWaitingToDisconnect=true;
 		}else{
-			Con->IsConnected = false;
+			Con->IsConnected=false;
 			if(lua_getiuservalue(L,Index,3)!=LUA_TNIL){ /* has previous */
 				if(lua_getiuservalue(L,Index,2)!=LUA_TNIL){ /* has previous and next */
 					lua_pushvalue(L,-1);
@@ -180,9 +180,9 @@ int EDisconnect(lua_State *L){
 	return 0;
 }
 int EReconnect(lua_State *L){
-	Connection *Con = luaL_checkudata(L,1,E_CONNECTION_NAME);
+	Connection *Con=luaL_checkudata(L,1,E_CONNECTION_NAME);
 	if(!Con->IsConnected){
-		Con->IsConnected = true;
+		Con->IsConnected=true;
 		lua_getiuservalue(L,1,4);
 		if(lua_getiuservalue(L,-1,1)!=LUA_TNIL){ /* has next */
 			lua_pushvalue(L,1);
@@ -194,13 +194,13 @@ int EReconnect(lua_State *L){
 		lua_pushvalue(L,1);
 		lua_setiuservalue(L,-2,1); /* new start */
 	}else if(Con->IsWaitingToDisconnect){
-		Con->IsWaitingToDisconnect = false;
+		Con->IsWaitingToDisconnect=false;
 	}
 	return 0;
 }
 int ENewEvent(lua_State *L){
-	Event *Event = lua_newuserdatauv(L,sizeof(Event),2);
-	Event->IsRunning = false;
+	Event *Event=lua_newuserdatauv(L,sizeof(Event),2);
+	Event->IsRunning=false;
 	lua_pushvalue(L,lua_upvalueindex(1));
 	lua_setmetatable(L,-2);
 	return 1;
@@ -208,10 +208,10 @@ int ENewEvent(lua_State *L){
 int EWait(lua_State *L){
 	luaL_checkudata(L,1,E_EVENT_NAME);
 	luaL_argcheck(L,lua_isboolean(L,2)||lua_isnoneornil(L,2),2,"boolean, nil, or none expected");
-	bool ShouldCloseOnError = !lua_isnone(L,2)&&lua_toboolean(L,2);
-	WThread *Waiting = lua_newuserdatauv(L,sizeof(WThread),3);
-	Waiting->IsRunning = false;
-	Waiting->ShouldCloseOnError = ShouldCloseOnError;
+	bool ShouldCloseOnError=!lua_isnone(L,2)&&lua_toboolean(L,2);
+	WThread *Waiting=lua_newuserdatauv(L,sizeof(WThread),3);
+	Waiting->IsRunning=false;
+	Waiting->ShouldCloseOnError=ShouldCloseOnError;
 	lua_pushvalue(L,lua_upvalueindex(1));
 	lua_setmetatable(L,-2);
 	if(lua_getiuservalue(L,1,2)!=LUA_TNIL){ /* has next */
@@ -234,37 +234,37 @@ int ConnectionErrorHandler(lua_State *L){
 	fputs("\n| Traceback:\n",stderr);
 	luaL_traceback(L,L,NULL,1);
 	size_t StringLength;
-	const char *String = lua_tolstring(L,2,&StringLength);
+	const char *String=lua_tolstring(L,2,&StringLength);
 	fwrite(String,1,StringLength,stderr);
 	fputc('\n',stderr);
 	return 0;
 }
 int EFire(lua_State *L){
-	Event *Running = luaL_checkudata(L,1,E_EVENT_NAME);
-	int Top = lua_gettop(L);
-	int MTop = Top-1;
-	int PTop = Top+1;
-	int ArgTop = Top+2;
+	Event *Running=luaL_checkudata(L,1,E_EVENT_NAME);
+	int Top=lua_gettop(L);
+	int MTop=Top-1;
+	int PTop=Top+1;
+	int ArgTop=Top+2;
 	luaL_checkstack(L,ArgTop,"too many arguments");
-	bool NotRunning = !Running->IsRunning;
+	bool NotRunning=!Running->IsRunning;
 	if(NotRunning){
-		Running->IsRunning = true;
+		Running->IsRunning=true;
 	}
 	/* event, args, err_handler, connection, function, args */
 	lua_pushcfunction(L,ConnectionErrorHandler);
 	lua_getiuservalue(L,1,1);
 	while(lua_type(L,-1)!=LUA_TNIL){
-		Connection *Con = lua_touserdata(L,-1);
+		Connection *Con=lua_touserdata(L,-1);
 		if(!Con->IsWaitingToDisconnect){
-			bool NotRunningCon = !Con->IsRunning;
+			bool NotRunningCon=!Con->IsRunning;
 			if(NotRunningCon){
-				Con->IsRunning = true;
+				Con->IsRunning=true;
 			}
 			lua_getiuservalue(L,-1,1);
 			for(int Index=2;Index<=Top;++Index){
 				lua_pushvalue(L,Index);
 			}
-			int Error = lua_pcall(L,MTop,0,PTop);
+			int Error=lua_pcall(L,MTop,0,PTop);
 			lua_settop(L,ArgTop);
 			if(Error==LUA_ERRRUN){
 				fputs("| Connection Point:\n",stderr);
@@ -272,9 +272,9 @@ int EFire(lua_State *L){
 				fputs("\n| End\n",stderr);
 			}
 			if(NotRunningCon){
-				Con->IsRunning = false;
+				Con->IsRunning=false;
 				if(Con->IsWaitingToDisconnect){
-					Con->IsWaitingToDisconnect = false;
+					Con->IsWaitingToDisconnect=false;
 					lua_getiuservalue(L,-1,2);
 					lua_insert(L,-2);
 					Disconnect(L,-1);
@@ -296,20 +296,20 @@ int EFire(lua_State *L){
 	/* event, args, WThread, thread, args */
 	lua_getiuservalue(L,1,2);
 	while(lua_type(L,-1)!=LUA_TNIL){
-		WThread *Waiting = lua_touserdata(L,-1);
+		WThread *Waiting=lua_touserdata(L,-1);
 		if(Waiting->IsRunning){
 			break;
 		}
-		Waiting->IsRunning = true;
+		Waiting->IsRunning=true;
 		lua_getiuservalue(L,-1,3);
-		lua_State *Thread = lua_tothread(L,-1);
+		lua_State *Thread=lua_tothread(L,-1);
 		if(lua_checkstack(Thread,MTop)){
 			for(int Index=2;Index<=Top;++Index){
 				lua_pushvalue(L,Index);
 			}
 			lua_xmove(L,Thread,MTop);
 			int NResults;
-			int Result = lua_resume(Thread,L,MTop,&NResults);
+			int Result=lua_resume(Thread,L,MTop,&NResults);
 			if(Result!=LUA_OK&&Result!=LUA_YIELD){
 				lua_xmove(Thread,L,1);
 				fputs("| Error Message (Wait Resume):\n",stderr);
@@ -317,12 +317,12 @@ int EFire(lua_State *L){
 				fputs("\n| Traceback:\n",stderr);
 				luaL_traceback(L,Thread,NULL,0);
 				size_t StringLength;
-				const char *String = lua_tolstring(L,-1,&StringLength);
+				const char *String=lua_tolstring(L,-1,&StringLength);
 				fwrite(String,1,StringLength,stderr);
 				fputs("\n| Fire Point:\n",stderr);
 				luaL_traceback(L,L,NULL,0);
 				size_t StringLength2;
-				const char *String2 = lua_tolstring(L,-1,&StringLength2);
+				const char *String2=lua_tolstring(L,-1,&StringLength2);
 				fwrite(String2,1,StringLength2,stderr);
 				if(Waiting->ShouldCloseOnError){
 					/* pass error object ???? (so __close metemethod can see it) */
@@ -339,7 +339,7 @@ int EFire(lua_State *L){
 		}else{
 			fputs("| Too many arguments to resume thread (Wait Resume)\n",stderr);
 		}
-		Waiting->IsRunning = false;
+		Waiting->IsRunning=false;
 		lua_settop(L,PTop);
 		if(lua_getiuservalue(L,-1,2)!=LUA_TNIL){ /* has previous */
 			if(lua_getiuservalue(L,-2,1)!=LUA_TNIL){ /* has previous and next */
@@ -376,7 +376,7 @@ int EFire(lua_State *L){
 		}
 	}
 	if(NotRunning){
-		Running->IsRunning = false;
+		Running->IsRunning=false;
 	}
 	return 0;
 }
