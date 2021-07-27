@@ -311,9 +311,9 @@ int EFire(lua_State *L){
 				lua_pushvalue(L,Idx);
 			}
 			lua_xmove(L,Thread,MTop);
-			int NResults;
-			int Result=lua_resume(Thread,L,MTop,&NResults);
-			if(Result!=LUA_OK&&Result!=LUA_YIELD){
+			int NRes;
+			int Res=lua_resume(Thread,L,MTop,&NRes);
+			if(Res!=LUA_OK&&Res!=LUA_YIELD){
 				lua_xmove(Thread,L,1);
 				fputs("| Error Message (Wait Resume):\n",stderr);
 				PrintErrorMessage(L);
@@ -337,7 +337,7 @@ int EFire(lua_State *L){
 				}
 				fputs("\n| End\n",stderr);
 			}else{
-				lua_pop(Thread,NResults);
+				lua_pop(Thread,NRes);
 			}
 		}else{
 			fputs("| Too many arguments to resume thread (Wait Resume)\n",stderr);
