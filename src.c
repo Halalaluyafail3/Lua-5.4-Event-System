@@ -16,13 +16,14 @@ uservalue 2 - next Connection
 uservalue 3 - previous Connection
 uservalue 4 - Event
 */
-typedef struct Connection{
+typedef struct Connection Connection;
+struct Connection{
 	size_t DebugStrLen;
 	bool IsConnected:1;
 	bool IsWaitingToDisconnect:1;
 	bool IsRunning:1;
 	char DebugStr[];
-}Connection;
+};
 #define E_EVENT_NAME "Event"
 /*
 Event uses its 1 bool of data to represent whether it is firing or not
@@ -30,9 +31,10 @@ IsRunning - whether the Event is running
 uservalue 1 - first connection
 uservalue 2 - first waiting thread
 */
-typedef struct Event{
+typedef struct Event Event;
+struct Event{
 	bool IsRunning:1;
-}Event;
+};
 #define E_WTHREAD_NAME "WThread"
 /*
 WThread uses its 2 bools of data to represent its state, whether it's being run, and whether it should close the thread upon erroring
@@ -42,10 +44,11 @@ uservalue 1 - next WThread
 uservalue 2 - previous WThread
 uservalue 3 - the thread
 */
-typedef struct WThread{
+typedef struct WThread WThread;
+struct WThread{
 	bool ShouldCloseOnError:1;
 	bool IsRunning:1;
-}WThread;
+};
 void PrintErrorMessage(lua_State *L){
 	switch(lua_type(L,-1)){
 		case LUA_TSTRING:{
