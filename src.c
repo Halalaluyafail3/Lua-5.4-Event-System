@@ -38,7 +38,7 @@ struct Event{
 #define E_WTHREAD_NAME "WThread"
 /*
 WThread uses its 2 bools of data to represent its state, whether it's being run, and whether it should close the thread upon erroring
-ShouldCloseOnError - detemines if the thread is closed when the thread that is resumed errors
+ShouldCloseOnErr - detemines if the thread is closed when the thread that is resumed errors
 IsRunning - whether the thread is running
 uservalue 1 - next WThread
 uservalue 2 - previous WThread
@@ -46,10 +46,10 @@ uservalue 3 - the thread
 */
 typedef struct WThread WThread;
 struct WThread{
-	bool ShouldCloseOnError:1;
+	bool ShouldCloseOnErr:1;
 	bool IsRunning:1;
 };
-void PrintErrorMessage(lua_State *L){
+void PrintErrMessage(lua_State *L){
 	switch(lua_type(L,-1)){
 		case LUA_TSTRING:{
 			size_t StrLen;
@@ -103,7 +103,7 @@ int EIsConnected(lua_State *L){
 int EConnect(lua_State *L){
 	luaL_checkudata(L,1,E_EVENT_NAME);
 	luaL_checktype(L,2,LUA_TFUNCTION);
-	luaL_traceback(L,L,NULL,0);
+	luaL_traceback(L,L,0,0);
 	size_t StrLen;
 	const char *Str=lua_tolstring(L,-1,&StrLen);
 	Connection *Con=lua_newuserdatauv(L,offsetof(Connection,DebugStr)+StrLen+1,4);
@@ -211,10 +211,10 @@ int ENewEvent(lua_State *L){
 int EWait(lua_State *L){
 	luaL_checkudata(L,1,E_EVENT_NAME);
 	luaL_argcheck(L,lua_isboolean(L,2)||lua_isnoneornil(L,2),2,"boolean, nil, or none expected");
-	bool ShouldCloseOnError=!lua_isnone(L,2)&&lua_toboolean(L,2);
+	bool ShouldCloseOnErr=!lua_isnone(L,2)&&lua_toboolean(L,2);
 	WThread *Waiting=lua_newuserdatauv(L,sizeof(WThread),3);
 	Waiting->IsRunning=false;
-	Waiting->ShouldCloseOnError=ShouldCloseOnError;
+	Waiting->ShouldCloseOnErr=ShouldCloseOnErr;
 	lua_pushvalue(L,lua_upvalueindex(1));
 	lua_setmetatable(L,-2);
 	if(lua_getiuservalue(L,1,2)!=LUA_TNIL){ /* has next */
@@ -230,12 +230,12 @@ int EWait(lua_State *L){
 	lua_settop(L,0);
 	return lua_yield(L,0);
 }
-int ConnectionErrorHandler(lua_State *L){
+int ConnectionErrHandler(lua_State *L){
 	lua_settop(L,1);
-	fputs("| Error message (Connection):\n",stderr);
-	PrintErrorMessage(L);
+	fputs("| Err message (Connection):\n",stderr);
+	PrintErrMessage(L);
 	fputs("\n| Traceback:\n",stderr);
-	luaL_traceback(L,L,NULL,1);
+	luaL_traceback(L,L,0,1);
 	size_t StrLen;
 	const char *Str=lua_tolstring(L,2,&StrLen);
 	fwrite(Str,1,StrLen,stderr);
@@ -254,7 +254,7 @@ int EFire(lua_State *L){
 		Running->IsRunning=true;
 	}
 	/* event, args, err_handler, connection, function, args */
-	lua_pushcfunction(L,ConnectionErrorHandler);
+	lua_pushcfunction(L,ConnectionErrHandler);
 	lua_getiuservalue(L,1,1);
 	while(lua_type(L,-1)!=LUA_TNIL){
 		Connection *Con=lua_touserdata(L,-1);
@@ -267,9 +267,9 @@ int EFire(lua_State *L){
 			for(int Idx=2;Idx<=Top;++Idx){
 				lua_pushvalue(L,Idx);
 			}
-			int Error=lua_pcall(L,MTop,0,PTop);
+			int Err=lua_pcall(L,MTop,0,PTop);
 			lua_settop(L,ArgTop);
-			if(Error==LUA_ERRRUN){
+			if(Err==LUA_ERRRUN){
 				fputs("| Connection Point:\n",stderr);
 				fwrite(Con->DebugStr,1,Con->DebugStrLen,stderr);
 				fputs("\n| End\n",stderr);
@@ -315,24 +315,24 @@ int EFire(lua_State *L){
 			int Res=lua_resume(Thread,L,MTop,&NRes);
 			if(Res!=LUA_OK&&Res!=LUA_YIELD){
 				lua_xmove(Thread,L,1);
-				fputs("| Error Message (Wait Resume):\n",stderr);
-				PrintErrorMessage(L);
+				fputs("| Err Message (Wait Resume):\n",stderr);
+				PrintErrMessage(L);
 				fputs("\n| Traceback:\n",stderr);
-				luaL_traceback(L,Thread,NULL,0);
+				luaL_traceback(L,Thread,0,0);
 				size_t StrLen;
 				const char *Str=lua_tolstring(L,-1,&StrLen);
 				fwrite(Str,1,StrLen,stderr);
 				fputs("\n| Fire Point:\n",stderr);
-				luaL_traceback(L,L,NULL,0);
+				luaL_traceback(L,L,0,0);
 				size_t StrLen2;
 				const char *Str2=lua_tolstring(L,-1,&StrLen2);
 				fwrite(Str2,1,StrLen2,stderr);
-				if(Waiting->ShouldCloseOnError){
+				if(Waiting->ShouldCloseOnErr){
 					/* pass error object ???? (so __close metemethod can see it) */
 					if(lua_resetthread(Thread)!=LUA_OK){ /* should i really warn for this??? */
 						lua_xmove(Thread,L,1);
-						fputs("\n| Error closing thread:\n",stderr);
-						PrintErrorMessage(L);
+						fputs("\n| Err closing thread:\n",stderr);
+						PrintErrMessage(L);
 					}
 				}
 				fputs("\n| End\n",stderr);
