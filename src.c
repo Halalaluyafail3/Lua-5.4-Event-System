@@ -232,7 +232,7 @@ int EWait(lua_State *L){
 }
 int ConnectionErrHandler(lua_State *L){
 	lua_settop(L,1);
-	fputs("| Err message (Connection):\n",stderr);
+	fputs("| Error message (Connection):\n",stderr);
 	PrintErrMessage(L);
 	fputs("\n| Traceback:\n",stderr);
 	luaL_traceback(L,L,0,1);
@@ -315,7 +315,7 @@ int EFire(lua_State *L){
 			int Res=lua_resume(Thread,L,MTop,&NRes);
 			if(Res!=LUA_OK&&Res!=LUA_YIELD){
 				lua_xmove(Thread,L,1);
-				fputs("| Err Message (Wait Resume):\n",stderr);
+				fputs("| Error Message (Wait Resume):\n",stderr);
 				PrintErrMessage(L);
 				fputs("\n| Traceback:\n",stderr);
 				luaL_traceback(L,Thread,0,0);
@@ -331,7 +331,7 @@ int EFire(lua_State *L){
 					/* pass error object ???? (so __close metemethod can see it) */
 					if(lua_resetthread(Thread)!=LUA_OK){ /* should i really warn for this??? */
 						lua_xmove(Thread,L,1);
-						fputs("\n| Err closing thread:\n",stderr);
+						fputs("\n| Error closing thread:\n",stderr);
 						PrintErrMessage(L);
 					}
 				}
