@@ -2,6 +2,8 @@
 #include<string.h>
 #include<stddef.h>
 #include<stdbool.h>
+#include"EventSystem.h"
+#include"Includes.h"
 /* Connection system for Lua 5.4 */
 #define E_CONNECTION_NAME "Connection"
 /*
@@ -49,7 +51,7 @@ struct WThread{
 	bool ShouldCloseOnErr:1;
 	bool IsRunning:1;
 };
-void PrintErrMessage(lua_State *L){
+static void PrintErrMessage(lua_State *L){
 	switch(lua_type(L,-1)){
 		case LUA_TSTRING:{
 			size_t StrLen;
@@ -95,12 +97,12 @@ void PrintErrMessage(lua_State *L){
 		}
 	}
 }
-int EIsConnected(lua_State *L){
+static int EIsConnected(lua_State *L){
 	Connection *Con=luaL_checkudata(L,1,E_CONNECTION_NAME);
 	lua_pushboolean(L,Con->IsConnected&&!Con->IsWaitingToDisconnect);
 	return 1;
 }
-int EConnect(lua_State *L){
+static int EConnect(lua_State *L){
 	luaL_checkudata(L,1,E_EVENT_NAME);
 	luaL_checktype(L,2,LUA_TFUNCTION);
 	luaL_traceback(L,L,0,0);
@@ -132,7 +134,7 @@ int EConnect(lua_State *L){
 	lua_setiuservalue(L,-2,4); /* set event */
 	return 1;
 }
-void Disconnect(lua_State *L,int Idx){
+static void Disconnect(lua_State *L,int Idx){
 	Idx=lua_absindex(L,Idx);
 	Connection *Con=lua_touserdata(L,Idx);
 	if(Con->IsConnected){
@@ -177,12 +179,12 @@ void Disconnect(lua_State *L,int Idx){
 		}
 	}
 }
-int EDisconnect(lua_State *L){
+static int EDisconnect(lua_State *L){
 	luaL_checkudata(L,1,E_CONNECTION_NAME);
 	Disconnect(L,1);
 	return 0;
 }
-int EReconnect(lua_State *L){
+static int EReconnect(lua_State *L){
 	Connection *Con=luaL_checkudata(L,1,E_CONNECTION_NAME);
 	if(!Con->IsConnected){
 		Con->IsConnected=true;
@@ -201,14 +203,14 @@ int EReconnect(lua_State *L){
 	}
 	return 0;
 }
-int ENewEvent(lua_State *L){
+static int ENewEvent(lua_State *L){
 	Event *Event=lua_newuserdatauv(L,sizeof(Event),2);
 	Event->IsRunning=false;
 	lua_pushvalue(L,lua_upvalueindex(1));
 	lua_setmetatable(L,-2);
 	return 1;
 }
-int EWait(lua_State *L){
+static int EWait(lua_State *L){
 	luaL_checkudata(L,1,E_EVENT_NAME);
 	luaL_argcheck(L,lua_isboolean(L,2)||lua_isnoneornil(L,2),2,"boolean, nil, or none expected");
 	bool ShouldCloseOnErr=!lua_isnone(L,2)&&lua_toboolean(L,2);
@@ -230,7 +232,7 @@ int EWait(lua_State *L){
 	lua_settop(L,0);
 	return lua_yield(L,0);
 }
-int ConnectionErrHandler(lua_State *L){
+static int ConnectionErrHandler(lua_State *L){
 	lua_settop(L,1);
 	fputs("| Error message (Connection):\n",stderr);
 	PrintErrMessage(L);
@@ -242,7 +244,7 @@ int ConnectionErrHandler(lua_State *L){
 	fputc('\n',stderr);
 	return 0;
 }
-int EFire(lua_State *L){
+static int EFire(lua_State *L){
 	Event *Running=luaL_checkudata(L,1,E_EVENT_NAME);
 	int Top=lua_gettop(L);
 	int MTop=Top-1;
@@ -383,7 +385,7 @@ int EFire(lua_State *L){
 	}
 	return 0;
 }
-void LoadEventLibrary(lua_State *L){
+void LoadEventLib(lua_State *L){
 	lua_createtable(L,0,2); /* Connections metatable */
 	lua_pushliteral(L,"locked");
 	lua_setfield(L,-2,"__metatable");
