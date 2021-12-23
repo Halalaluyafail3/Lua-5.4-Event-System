@@ -2,6 +2,8 @@
 
 An event system for Lua with events, connections, and waiting threads. Errors inside of connections and waiting threads will generate error messages.
 
+This is an old version which will not be updated because it has been restructured and doesn't work as a standalone file.
+
 ## Functions exposed to C code:
 
 ### void LoadEventLibrary(lua_State*)
