@@ -3,7 +3,7 @@
 #include<stddef.h>
 #include<stdbool.h>
 #include"EventSystem.h"
-#include"Includes.h" /* this is where your includes for Lua should be */
+#include"Includes.h" /* Includes.h is a file for including Lua header files */
 /* Connection system for Lua 5.4 */
 #define E_CONNECTION_NAME "Connection"
 /*
